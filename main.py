@@ -152,70 +152,13 @@ function addMessage(text, sender) {
 </body>
 </html>
 """
-# # add validation for user input and model response
-# class QueryRequest(BaseModel):
-#     text: str
-
-# class QueryResponse(BaseModel):
-#     answer: str
-
-# # =========================
-# # Dummy LLM endpoint
-# # =========================
-
-# @app.post("/query", response_model=QueryResponse)
-# async def query_llm(payload: QueryRequest):
-
-#     global conversation_memory
-
-#     try:
-        
-#         # global conversation_memory
-
-#         # 1) Add new user message to memory
-#         conversation_memory.append({
-#             "role": "user",
-#             "content": payload.text
-#         })
-
-#         # 2) Build initial state using FULL memory
-#         initial_state = {
-#                             "messages": conversation_memory,
-#                             "user_input": payload.text
-#                         }
-
-#         # 3) Run graph
-#         result = chat_graph.invoke(initial_state)
-
-#         # 4) Save assistant response back to memory
-#         conversation_memory.append({
-#             "role": "assistant",
-#             "content": result["answer"]
-#         })
-
-#         # for debug
-#         print(f"Conversation memory: {conversation_memory}")
-
-#         return QueryResponse(answer=result["answer"])
-    
-
-#     except Exception as e:
-#         print("LLM ERROR:", e)
-#         answer_text = FALLBACK_MESSAGE
-
-#         return QueryResponse(answer=answer_text)
 
 # -------------------------------
-# REQUEST MODEL
+# REQUEST & RESPONSE MODEL
 # -------------------------------
 
 class QueryRequest(BaseModel):
     text: str
-
-
-# -------------------------------
-# RESPONSE MODEL
-# -------------------------------
 
 class QueryResponse(BaseModel):
     answer: str

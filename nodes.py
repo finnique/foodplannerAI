@@ -1,6 +1,12 @@
 import json
 from llm_client import llm
+from utils import *
+from langchain_community.tools import DuckDuckGoSearchResults
 
+
+search_tool = DuckDuckGoSearchResults(
+    num_results=5
+)
 
 # -------------------------------
 # INTENT CLASSIFIER NODE
@@ -28,28 +34,118 @@ Return format:
 {{"intent": "one_of_the_above"}}
 """
 
-    try:
-        result = llm.invoke(prompt)
-        content = result.content
+    # try:
+    #     result = llm.invoke(prompt)
+    #     content = result.content
 
-        parsed = json.loads(content)
-        state["intent"] = parsed["intent"]
+    #     print(f"Intent: {content}")
+
+    #     parsed = json.loads(content)
+    #     state["intent"] = parsed["intent"]
+
+    # except Exception as e:
+    #     print("INTENT ERROR:", e)
+    #     state["intent"] = "general_chat"
+
+    # return state
+
+    response = llm.invoke(prompt)
+    print("RAW LLM:", response.content)
+    # intent = parse_intent_response(response.content)
+    # print(f"INTENT: {intent}")
+    
+
+    try:
+
+        # extract json block
+        intent = extract_json_block(response.content) 
+        state["intent"] = intent
+
+        print(f"CONTENT IN JSON BLOCK: {intent}")
+
+
 
     except Exception as e:
         print("INTENT ERROR:", e)
-        state["intent"] = "general_chat"
+        print("BAD OUTPUT:", response.content)
+        intent = "general_chat"
 
-    return state
+    print("FINAL INTENT:", intent)
+
+    return {**state, "intent": intent}
 
 
 # -------------------------------
 # MEAL PLANNER TOOL
 # -------------------------------
 
+# def meal_planner_node(state):
+#     user_text = state["user_input"]
+
+#     state["response"] = f"(Meal planner tool) Creating meal plan for: {user_text}"
+#     return state
+
+
 def meal_planner_node(state):
     user_text = state["user_input"]
 
-    state["response"] = f"(Meal planner tool) Creating meal plan for: {user_text}"
+    prompt = f'''
+You are a food planner assistant.
+Your task is to extract only ingredient names from the user’s input so they can be used to search for recipes.
+Return ONLY valid JSON.
+
+Rules:
+- Do not include quantities, units, descriptions, or extra text.
+- Do not include explanations.
+- Normalize ingredient names to simple, common forms.
+- If no ingredients are present, return an empty string.
+- Ignore anything that is not an ingredient.
+
+Conversation: {user_text}
+
+Return format:
+{{"ingredient": "a single string of ingredients separated by a comma"}}
+
+'''
+
+    try:
+
+        # ingredient extraction
+        result = llm.invoke(prompt)
+        content = result.content
+
+        print(f"Meal planner response: {content}")
+
+        parsed = json.loads(content)
+        ingredients = parsed["ingredient"]
+
+        print(f"Reciept: {ingredients}")
+
+        # search for recipe
+        # search_query = f"{ingredients} recipe"
+        # search_results = search_tool.invoke(search_query)
+
+        # # results is usually a list of dicts with title + link
+        # if not search_results:
+        #     state["response"] = "I couldn't find recipes online."
+        #     return state
+
+        # formatted = "Here are some recipe ideas:\n\n"
+
+        # for r in search_results:
+        #     title = r.get("title", "Recipe")
+        #     link = r.get("link", "")
+        #     formatted += f"- {title}\n  {link}\n\n"
+
+        # state["response"] = formatted
+
+        # state["response"] = f"(Inredient Extraction) {parsed}"
+        state["response"] = f"(Meal planner tool) Creating meal plan for: {ingredients}"
+
+    except Exception as e:
+        print("Inredient Extraction:", e)
+        state["intent"] = "general_chat"
+
     return state
 
 
